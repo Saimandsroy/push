@@ -1,0 +1,9 @@
+name = "printing-frontend"
+compatibility_date = "2025-09-15"
+
+compatibility_flags = ["nodejs_compat"]
+
+[pages]
+# This points to the output folder you're deploying
+# Adjust if your build output path is different
+build_output_dir = ".vercel/output/static"

@@ -1,0 +1,17 @@
+name = "printing-upload-worker"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+
+[[r2_buckets]]
+binding = "BUCKET"          # available in Env as env.BUCKET
+bucket_name = "printing"     # change if your bucket name is different
+
+[vars]
+# Base URL used to construct public file URLs for responses
+# Example formats:
+#   - R2 public domain: https://<account-id>.r2.cloudflarestorage.com/<bucket>
+#   - R2.dev public bucket (if configured): https://<public-hash>.r2.dev/uploads/
+R2_PUBLIC_BASE = "https://pub-6f63e5e6ecb749e1a0a18c2525616d92.r2.dev/uploads/"
+UPLOAD_PREFIX = "uploads/"
+# Optional expiry minutes for auto-housekeeping (metadata only; implement cleanup separately)
+EXPIRE_MINUTES = "43200"  # 30 days
