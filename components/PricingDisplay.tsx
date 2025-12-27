@@ -8,10 +8,26 @@ interface PricingDisplayProps {
 
 export function PricingDisplay({ pricing }: PricingDisplayProps) {
   const cards: Array<{ key: string; title: string; icon: string; price: number }> = [];
-  if (typeof pricing.a4_bw === 'number') cards.push({ key: 'a4_bw', title: 'A4 B&W', icon: '🖤', price: pricing.a4_bw });
-  if (typeof pricing.a4_color === 'number') cards.push({ key: 'a4_color', title: 'A4 Color', icon: '🌈', price: pricing.a4_color });
-  if (typeof pricing.a3_bw === 'number') cards.push({ key: 'a3_bw', title: 'A3 B&W', icon: '📄', price: pricing.a3_bw as number });
-  if (typeof pricing.a3_color === 'number') cards.push({ key: 'a3_color', title: 'A3 Color', icon: '🎨', price: pricing.a3_color as number });
+  const colorEnabled = pricing.color_enabled !== false;
+
+  if (typeof pricing.a4_bw === 'number') {
+    cards.push({ key: 'a4_bw', title: 'A4 B&W', icon: '🖤', price: pricing.a4_bw });
+  }
+  if (colorEnabled && typeof pricing.a4_color === 'number') {
+    cards.push({ key: 'a4_color', title: 'A4 Color', icon: '🌈', price: pricing.a4_color });
+  }
+  if (typeof pricing.a3_bw === 'number') {
+    cards.push({ key: 'a3_bw', title: 'A3 B&W', icon: '📄', price: pricing.a3_bw as number });
+  }
+  if (colorEnabled && typeof pricing.a3_color === 'number') {
+    cards.push({ key: 'a3_color', title: 'A3 Color', icon: '🎨', price: pricing.a3_color as number });
+  }
+  if (pricing.matt_enabled && typeof pricing.a4_matt === 'number') {
+    cards.push({ key: 'a4_matt', title: 'A4 Matt', icon: '📄', price: pricing.a4_matt });
+  }
+  if (pricing.glossy_enabled && typeof pricing.a4_glossy === 'number') {
+    cards.push({ key: 'a4_glossy', title: 'A4 Glossy', icon: '✨', price: pricing.a4_glossy });
+  }
 
   return (
     <div className="mb-6">

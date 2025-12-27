@@ -47,7 +47,15 @@ export function CheckoutModal({ files, sessionId, customerUUID, onClose, onSucce
   const calculateTotal = () => {
     return files.reduce((total, file) => {
       const pagesToPrint = file.pageSelection === 'all' ? file.pages : file.selectedPages.length;
-      return total + calculatePrice(file.paperSize, file.colorMode, pagesToPrint, file.copies);
+      const isPdf = file.file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      return total + calculatePrice(
+        file.paperSize,
+        file.colorMode,
+        pagesToPrint,
+        file.copies,
+        file.paperType || 'normal',
+        Boolean(file.duplex && isPdf)
+      );
     }, 0);
   };
 

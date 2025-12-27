@@ -75,12 +75,21 @@ export function usePricing() {
       }
 
       const data = await resp.json().catch(() => ({} as any));
-      const p = data?.pricing || {};
+      const root = data || {};
+      const priceSource = (root.pricing && Object.keys(root.pricing).length > 0)
+        ? root.pricing
+        : root;
 
       const normalized: PricingConfig = {
-        a4_bw: Number(p.a4_bw ?? 2.0),
-        a4_color: Number(p.a4_color ?? 8.0),
-        ...(p.a3_bw != null && p.a3_color != null ? { a3_bw: Number(p.a3_bw), a3_color: Number(p.a3_color) } : {})
+        a4_bw: Number(priceSource.a4_bw ?? 2.0),
+        a4_color: Number(priceSource.a4_color ?? 8.0),
+        ...(priceSource.a3_bw != null && priceSource.a3_color != null ? { a3_bw: Number(priceSource.a3_bw), a3_color: Number(priceSource.a3_color) } : {}),
+        ...(priceSource.a4_matt != null ? { a4_matt: Number(priceSource.a4_matt) } : {}),
+        ...(priceSource.a4_glossy != null ? { a4_glossy: Number(priceSource.a4_glossy) } : {}),
+        matt_enabled: root.matt_enabled,
+        glossy_enabled: root.glossy_enabled,
+        color_enabled: (root.color_enabled ?? root.colorEnabled),
+        duplex_enabled: root.duplex_enabled
       };
 
       console.log('[Pricing] Loaded from backend:', normalized);
@@ -96,6 +105,7 @@ export function usePricing() {
       const defaultPricing: PricingConfig = {
         a4_bw: 2.00,
         a4_color: 8.00,
+        color_enabled: true
       };
       setPricing(defaultPricing);
     } finally {
@@ -108,12 +118,37 @@ export function usePricing() {
     fetchPricing();
   }, []);
 
-  const calculatePrice = (paperSize: string, colorMode: string, pages: number, copies: number): number => {
+  const calculatePrice = (
+    paperSize: string,
+    colorMode: string,
+    pages: number,
+    copies: number,
+    paperType: 'normal' | 'matt' | 'glossy' = 'normal',
+    duplex: boolean = false
+  ): number => {
     if (!pricing) return 0;
     
-    const priceKey = `${paperSize.toLowerCase()}_${colorMode}` as keyof PricingConfig;
-    const pricePerPage = pricing[priceKey] || 2.00;
-    return pages * copies * pricePerPage;
+    let pricePerPage = 2.0;
+
+    if (paperType === 'matt' && pricing.a4_matt) {
+      pricePerPage = pricing.a4_matt;
+    } else if (paperType === 'glossy' && pricing.a4_glossy) {
+      pricePerPage = pricing.a4_glossy;
+    } else {
+      const priceKey = `${paperSize.toLowerCase()}_${colorMode}` as keyof PricingConfig;
+      const candidate = pricing[priceKey];
+      if (typeof candidate === 'number') {
+        pricePerPage = candidate;
+      } else if (typeof pricing.a4_bw === 'number') {
+        pricePerPage = pricing.a4_bw;
+      }
+    }
+
+    const effectivePages = pages;
+    const effectiveCopies = copies;
+    const sheetsMultiplier = duplex ? 1 : 1;
+
+    return effectivePages * effectiveCopies * pricePerPage * sheetsMultiplier;
   };
 
   const refreshPricing = () => {

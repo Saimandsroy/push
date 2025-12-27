@@ -22,7 +22,15 @@ export function OrderSummary({ files, onCheckout, disabled = false }: OrderSumma
   const calculateTotal = () => {
     return files.reduce((total, file) => {
       const pagesToPrint = file.pageSelection === 'all' ? file.pages : file.selectedPages.length;
-      return total + calculatePrice(file.paperSize, file.colorMode, pagesToPrint, file.copies);
+      const isPdf = file.file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      return total + calculatePrice(
+        file.paperSize,
+        file.colorMode,
+        pagesToPrint,
+        file.copies,
+        file.paperType || 'normal',
+        Boolean(file.duplex && isPdf)
+      );
     }, 0);
   };
 
@@ -62,14 +70,23 @@ export function OrderSummary({ files, onCheckout, disabled = false }: OrderSumma
           <h4 className="font-semibold text-gray-900">Items:</h4>
           {files.map((file) => {
             const pagesToPrint = file.pageSelection === 'all' ? file.pages : file.selectedPages.length;
-            const itemTotal = calculatePrice(file.paperSize, file.colorMode, pagesToPrint, file.copies);
+            const isPdf = file.file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+            const itemTotal = calculatePrice(
+              file.paperSize,
+              file.colorMode,
+              pagesToPrint,
+              file.copies,
+              file.paperType || 'normal',
+              Boolean(file.duplex && isPdf)
+            );
             
             return (
               <div key={file.id} className="flex justify-between items-start text-sm bg-gray-50 p-3 rounded-lg">
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-gray-900 truncate">{file.name}</div>
                   <div className="text-gray-600">
-                    {file.paperSize} {file.colorMode.toUpperCase()} • {pagesToPrint} pages × {file.copies} copies
+                    {file.paperSize} {file.colorMode.toUpperCase()} • {(file.paperType || 'normal').toUpperCase()} •
+                    {file.duplex && isPdf ? ' Duplex' : ' Simplex'} • {pagesToPrint} pages × {file.copies} copies
                   </div>
                 </div>
                 <div className="font-semibold text-gray-900 ml-2">

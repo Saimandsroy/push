@@ -51,6 +51,10 @@ interface FileItemProps {
   onUpdate: (updates: Partial<FileObject>) => void;
   onRemove: () => void;
   a3Supported?: boolean;
+  colorEnabled?: boolean;
+  mattEnabled?: boolean;
+  glossyEnabled?: boolean;
+  duplexEnabled?: boolean;
 }
 
 export type FileUploadHandle = {
@@ -76,6 +80,10 @@ export const FileUpload = forwardRef<FileUploadHandle, FileUploadProps>(function
   
   // Check if A3 is supported based on backend pricing
   const a3Supported = !!(pricing?.a3_bw && pricing?.a3_color);
+  const colorEnabled = pricing?.color_enabled !== false;
+  const mattEnabled = !!(pricing?.matt_enabled && pricing?.a4_matt);
+  const glossyEnabled = !!(pricing?.glossy_enabled && pricing?.a4_glossy);
+  const duplexEnabled = !!pricing?.duplex_enabled;
 
   // Configure PDF.js worker (client-side only)
   useEffect(() => {
@@ -122,6 +130,8 @@ export const FileUpload = forwardRef<FileUploadHandle, FileUploadProps>(function
     form.append('pageSelection', String(fileObj.pageSelection ?? 'all'));
     form.append('pageRange', String(fileObj.pageRange ?? ''));
     form.append('selectedPages', JSON.stringify(fileObj.selectedPages ?? []));
+    form.append('paperType', String(fileObj.paperType ?? 'normal'));
+    form.append('duplex', String(fileObj.duplex ?? false));
 
     let resp = await fetchWithLoadBalancer('/customer/upload', { method: 'POST', body: form });
 
@@ -140,7 +150,9 @@ export const FileUpload = forwardRef<FileUploadHandle, FileUploadProps>(function
           totalPages: Number(fileObj.pages ?? 1),
           pageSelection: String(fileObj.pageSelection ?? 'all'),
           pageRange: String(fileObj.pageRange ?? ''),
-          selectedPages: Array.isArray(fileObj.selectedPages) ? fileObj.selectedPages : []
+          selectedPages: Array.isArray(fileObj.selectedPages) ? fileObj.selectedPages : [],
+          paperType: String(fileObj.paperType ?? 'normal'),
+          duplex: Boolean(fileObj.duplex ?? false)
         };
         console.warn('[Upload] FormData timed out; retrying with JSON payload');
         resp = await fetchWithLoadBalancer('/customer/upload', {
@@ -242,7 +254,9 @@ export const FileUpload = forwardRef<FileUploadHandle, FileUploadProps>(function
           selectedPages: [],
           status: 'processing',
           r2Url: '', // Will be set after upload
-          r2Key: ''  // Will be set after upload
+          r2Key: '',  // Will be set after upload
+          paperType: 'normal',
+          duplex: false
         };
 
         // Detect pages for PDFs (client-side only)
@@ -572,6 +586,10 @@ export const FileUpload = forwardRef<FileUploadHandle, FileUploadProps>(function
               onUpdate={(updates: Partial<FileObject>) => updateFile(fileObj.id, updates)}
               onRemove={() => removeFile(fileObj.id)}
               a3Supported={a3Supported}
+              colorEnabled={colorEnabled}
+              mattEnabled={mattEnabled}
+              glossyEnabled={glossyEnabled}
+              duplexEnabled={duplexEnabled}
             />
           ))}
         </div>
@@ -589,7 +607,7 @@ export const FileUpload = forwardRef<FileUploadHandle, FileUploadProps>(function
   );
 });
 
-function FileItem({ file, onUpdate, onRemove, a3Supported = true }: FileItemProps) {
+function FileItem({ file, onUpdate, onRemove, a3Supported = true, colorEnabled = true, mattEnabled = false, glossyEnabled = false, duplexEnabled = false }: FileItemProps) {
   const isPdf = file.file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
   const showPageSelection = isPdf && file.pages > 1;
 
@@ -642,6 +660,12 @@ function FileItem({ file, onUpdate, onRemove, a3Supported = true }: FileItemProp
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [file.id, file.file, isPdf]);
+
+  useEffect(() => {
+    if (!colorEnabled && file.colorMode === 'color') {
+      onUpdate({ colorMode: 'bw' });
+    }
+  }, [colorEnabled, file.colorMode, onUpdate]);
 
   return (
     <Card className="p-6">
@@ -793,9 +817,35 @@ function FileItem({ file, onUpdate, onRemove, a3Supported = true }: FileItemProp
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="bw">🖤 Black & White</option>
-                <option value="color">🌈 Full Color</option>
+                {colorEnabled && <option value="color">🌈 Full Color</option>}
               </select>
             </div>
+
+            <div className="col-span-2 sm:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Paper Type</label>
+              <select
+                value={file.paperType || 'normal'}
+                onChange={(e) => onUpdate({ paperType: e.target.value as 'normal' | 'matt' | 'glossy' })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="normal">Normal</option>
+                {file.paperSize === 'A4' && mattEnabled && <option value="matt">Matt</option>}
+                {file.paperSize === 'A4' && glossyEnabled && <option value="glossy">Glossy</option>}
+              </select>
+            </div>
+
+            {isPdf && duplexEnabled && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Duplex</label>
+                <button
+                  type="button"
+                  onClick={() => onUpdate({ duplex: !file.duplex })}
+                  className={`w-full px-3 py-2 border rounded-lg text-sm font-medium ${file.duplex ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700'}`}
+                >
+                  {file.duplex ? 'Enabled (Both Sides)' : 'Disabled (Single Side)'}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Remove Button */}

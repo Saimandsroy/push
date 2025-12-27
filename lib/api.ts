@@ -4,9 +4,9 @@
 
 // List of backend servers for round-robin load balancing
 const BACKEND_SERVERS = [
-  'https://b12.prane.in/api',
-  'https://b13.prane.in/api',
-  'https://b14.prane.in/api',
+  'https://printing1.servox.store/api',
+  'https://printing2.servox.store/api',
+  'https://printing3.servox.store/api',
 ];
 
 // Round-robin index (server-side safe with module-level state)

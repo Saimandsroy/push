@@ -14,6 +14,8 @@ export interface FileObject {
   r2Url?: string;
   r2Key?: string;
   backendFileId?: string; // ID returned by backend /customer/upload endpoint
+  paperType?: 'normal' | 'matt' | 'glossy';
+  duplex?: boolean;
 }
 
 export interface PricingConfig {
@@ -21,6 +23,12 @@ export interface PricingConfig {
   a4_color: number;
   a3_bw?: number;
   a3_color?: number;
+  a4_matt?: number;
+  a4_glossy?: number;
+  matt_enabled?: boolean;
+  glossy_enabled?: boolean;
+  color_enabled?: boolean;
+  duplex_enabled?: boolean;
 }
 
 export interface SessionData {
